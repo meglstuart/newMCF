@@ -32,3 +32,13 @@
 *.swp
 
 build/*
+
+# miscellaneou
+.idea
+cmake-build-debug
+LICENSE
+.gitmodules
+README.md
+computeEllipsoid.m
+*.BK
+*.BK1

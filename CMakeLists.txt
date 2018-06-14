@@ -27,6 +27,6 @@ find_package(LIBIGL REQUIRED QUIET)
 find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
 # Add your project files
-file(GLOB SRCFILES *.cpp)
+file(GLOB SRCFILES *.cxx)
 add_executable(${PROJECT_NAME}_bin ${SRCFILES})
 target_link_libraries(${PROJECT_NAME}_bin igl::core igl::opengl igl::opengl_glfw ${VTK_LIBRARIES})
