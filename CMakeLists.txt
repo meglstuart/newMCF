@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(mcf_srep)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # libigl
 option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" OFF)
 option(LIBIGL_WITH_ANTTWEAKBAR       "Use AntTweakBar"    OFF)
