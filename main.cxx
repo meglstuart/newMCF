@@ -42,6 +42,8 @@ int main(int argc, char *argv[]) {
     MatrixXd V,U;
     MatrixXi F;
     SparseMatrix<double> L;
+    MatrixXd rotation;
+    VectorXd radii;
 
     int iter = 0;
     int max_iter = 300;
@@ -50,7 +52,7 @@ int main(int argc, char *argv[]) {
     igl::cotmatrix(V,F,L);
     U = V;
     double q = 1.0; // for now 0.2
-   while(q > 0.05) {
+    while(q > 0.04) {
         // compute mean curvature flow
         SparseMatrix<double> M;
         igl::massmatrix(U,F,igl::MASSMATRIX_TYPE_BARYCENTRIC,M);
@@ -135,7 +137,7 @@ int main(int argc, char *argv[]) {
             U(i,1) = p[1];
             U(i,2) = p[2];
         }
-        
+
         vtkSmartPointer<vtkCleanPolyData> cleaner =
             vtkSmartPointer<vtkCleanPolyData>::New();
         cleaner->SetTolerance(0.05);
@@ -158,8 +160,8 @@ int main(int argc, char *argv[]) {
         Matrix3d U_second_moment = U_transposed * U_centered;
 
         SelfAdjointEigenSolver<MatrixXd> es(U_second_moment);
-        Matrix3d rotation = es.eigenvectors(); // 3 by 3 rotation matrix
-        VectorXd radii = es.eigenvalues();
+        rotation = es.eigenvectors(); // 3 by 3 rotation matrix
+        radii = es.eigenvalues();
         radii(0) = sqrt(radii(0));
         radii(1) = sqrt(radii(1));
         radii(2) = sqrt(radii(2));
@@ -245,5 +247,8 @@ int main(int argc, char *argv[]) {
             break;
         }
     }
+    cout << radii << endl;
+    cout << endl;
+    cout << rotation << endl;
     return 0;
 }
