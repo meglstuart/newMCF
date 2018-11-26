@@ -3,11 +3,11 @@ close all;
 fid = fopen(fullfile(dataDir,'radii.txt'),'rt');
 radii = fscanf(fid, '%f,%f,%f\n');
 radii_mat = reshape(radii, 3, []);
-idx = size(radii_mat,2);
+idx = size(radii_mat,2)-1;
 current_radii = radii_mat(:,idx);
 current_radii_sorted = sort(current_radii);
 %%
-mesh_prefix = sprintf('%04d',idx);
+mesh_prefix = sprintf('cleaned/cleaned_%04d',idx);
 mesh_deformed = read_vtkMesh(fullfile(dataDir, strcat(mesh_prefix,'.vtk')));
 mesh_deformed_cog = mean(mesh_deformed.points);
 mesh_deformed_points_centered = mesh_deformed.points - repmat(mesh_deformed_cog, size(mesh_deformed.points) ./ size(mesh_deformed_cog));
