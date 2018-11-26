@@ -8,7 +8,11 @@
 #include <igl/readDMAT.h>
 #include <igl/readOFF.h>
 #include <igl/writeOFF.h>
+#include <igl/readSTL.h>
+#include <igl/remove_duplicate_vertices.h>
 #include <igl/repdiag.h>
+#include <igl/opengl/glfw/Viewer.h>
+
 
 #include <iostream>
 #include <fstream>
@@ -32,6 +36,8 @@
 #include <vtkImplicitPolyDataDistance.h>
 #include <vtkCleanPolyData.h>
 
+igl::opengl::glfw::Viewer viewer;
+
 using namespace Eigen;
 using namespace std;
 
@@ -41,8 +47,11 @@ int main(int argc, char *argv[]) {
         cerr << "Usage " << argv[0] <<": inputMesh dt smoothAmount maxIter" << endl;
         return -1;
     }
-    MatrixXd V,U;
-    MatrixXi F;
+
+
+    MatrixXd temp_V, V, U;
+    MatrixXi temp_F, F, SVI, SVJ;
+    MatrixXd N;
     SparseMatrix<double> L;
     MatrixXd rotation;
     VectorXd radii;
@@ -54,9 +63,24 @@ int main(int argc, char *argv[]) {
     int iter = 0;
     int max_iter = atoi(argv[4]);
     char temp[128];
-    igl::readOFF(argv[1], V, F);
+    printf("Opening %s\n",argv[1]);
+    igl::readSTL(argv[1], temp_V, temp_F, N);
+    igl::remove_duplicate_vertices(temp_V,temp_F,0,V,SVI,SVJ,F);
+    printf("Read STL file\n");
     igl::cotmatrix(V,F,L);
+    // cout << "calculated  L "<< endl << L << endl;
     U = V;
+
+
+    // Use original normals as pseudo-colors
+    igl::per_vertex_normals(V,F,N);
+    MatrixXd C = N.rowwise().normalized().array()*0.5+0.5;
+
+    viewer.data().set_mesh(U, F);
+    viewer.data().set_colors(C);
+    viewer.launch();
+
+
     double q = 1.0; // for now 0.2
     while(q > 0.04) {
         // compute mean curvature flow
@@ -173,7 +197,7 @@ int main(int argc, char *argv[]) {
         radii(2) = sqrt(radii(2));
 
         double ellipsoid_volume = 4 / 3.0 * M_PI * radii(0) * radii(1) * radii(2);
-        double volume_factor = pow(current_volume / ellipsoid_volume, 1.0 / 3.0); 
+        double volume_factor = pow(current_volume / ellipsoid_volume, 1.0 / 3.0);
         radii(0) *= volume_factor;
         radii(1) *= volume_factor;
         radii(2) *= volume_factor;
@@ -202,7 +226,7 @@ int main(int argc, char *argv[]) {
             ellipsoid_points_matrix(i,2) = p[2];
         }
         // rotate the points
-        MatrixXd rotated_ellipsoid_points = rotation * (ellipsoid_points_matrix.transpose()); 
+        MatrixXd rotated_ellipsoid_points = rotation * (ellipsoid_points_matrix.transpose());
         rotated_ellipsoid_points.transposeInPlace(); // n x 3
         // translate the points
         MatrixXd translated_points = rotated_ellipsoid_points + cog.replicate(rotated_ellipsoid_points.rows(),1);
@@ -210,7 +234,7 @@ int main(int argc, char *argv[]) {
         // convert eigen matrix to vtk polydata
         vtkSmartPointer<vtkPolyData> best_fitting_ellipsoid_polydata =
             vtkSmartPointer<vtkPolyData>::New();
-        vtkSmartPointer<vtkPoints> best_fitting_ellipsoid_points = 
+        vtkSmartPointer<vtkPoints> best_fitting_ellipsoid_points =
             vtkSmartPointer<vtkPoints>::New();
         for(int i = 0; i < translated_points.rows(); ++i) {
             double p[3] = {translated_points(i,0), translated_points(i,1), translated_points(i,2)};
@@ -220,7 +244,7 @@ int main(int argc, char *argv[]) {
         best_fitting_ellipsoid_polydata->SetPolys(ellipsoid_polydata->GetPolys());
         best_fitting_ellipsoid_polydata->Modified();
 
-        vtkSmartPointer<vtkImplicitPolyDataDistance> implicit_distance_filter = 
+        vtkSmartPointer<vtkImplicitPolyDataDistance> implicit_distance_filter =
             vtkSmartPointer<vtkImplicitPolyDataDistance>::New();
         implicit_distance_filter->SetInput(best_fitting_ellipsoid_polydata);
         vector<double> distance_vector;
@@ -233,25 +257,25 @@ int main(int argc, char *argv[]) {
         }
 
         sort(distance_vector.begin(), distance_vector.end());
-        string off_filename = "temp_" + prefix;
+        string off_filename = "temp_off/temp_" + prefix;
         off_filename += ".off";
         igl::writeOFF(off_filename, U, F);
         int quantile_idx = static_cast<int>(U.rows() * 0.95);
 
         q = distance_vector[quantile_idx];
         cout << "iter " << iter << ": " << q << endl;
-        string vtk_filename = "ell_" + prefix;
+        string vtk_filename = "ell/ell_" + prefix;
         vtk_filename += ".vtk";
         writer->SetFileName(vtk_filename.c_str());
         writer->SetInputData(best_fitting_ellipsoid_polydata);
         writer->Update();
 
-        vtk_filename = "temp_" + prefix;
+        vtk_filename = "temp_vtk/temp_" + prefix;
         vtk_filename += ".vtk";
         writer->SetFileName(vtk_filename.c_str());
         writer->SetInputData(polydata_smooth);
         writer->Update();
-        string cleaned_vtk_filename = "cleaned_" + prefix;
+        string cleaned_vtk_filename = "cleaned/cleaned_" + prefix;
         cleaned_vtk_filename+=".vtk";
         writer->SetFileName(cleaned_vtk_filename.c_str());
         writer->SetInputData(cleaned_polydata);
