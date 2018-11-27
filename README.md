@@ -1,4 +1,6 @@
 # newMCF
+needs VTK
+
 
 ## clone:
 `git clone --recurse-submodules git@github.com:meglstuart/newMCF.git`
