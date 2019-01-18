@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
               U.rowwise() -= centroid;
               // Normalize to unit surface area (important for numerics)
               U.array() /= sqrt(area);
-              sprintf(temp,"%04d", iter++);
+              sprintf(temp,"%d", ++iter);
               string prefix = temp;
 
               vtkSmartPointer<vtkPoints> points =
@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
               writer->SetInputData(best_fitting_ellipsoid_polydata);
               writer->Update();
 
-              vtk_filename = "temp_vtk/temp_" + prefix;
+              vtk_filename = "temp_vtk/" + prefix;
               vtk_filename += ".vtk";
               writer->SetFileName(vtk_filename.c_str());
               writer->SetInputData(polydata_smooth);
